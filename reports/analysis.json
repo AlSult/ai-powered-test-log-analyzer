@@ -1,0 +1,21 @@
+{
+    "source_file": "logs/sample.log",
+    "summary": {
+        "total_tests": 6,
+        "passed": 4,
+        "failed": 2,
+        "pass_rate": 66.67
+    },
+    "failures": [
+        {
+            "test_name": "DatabaseConnectionTest",
+            "status": "FAIL",
+            "error": "Connection timeout after 30 seconds"
+        },
+        {
+            "test_name": "PaymentProcessingTest",
+            "status": "FAIL",
+            "error": "HTTP 500 Internal Server Error"
+        }
+    ]
+}
