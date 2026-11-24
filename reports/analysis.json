@@ -1,43 +1,128 @@
 {
     "source_file": "logs/sample.log",
     "summary": {
-        "total_tests": 6,
-        "passed": 4,
-        "failed": 2,
-        "pass_rate": 66.67
+        "total_tests": 29,
+        "passed": 22,
+        "failed": 7,
+        "pass_rate": 75.86
     },
     "failures": [
         {
-            "test_name": "DatabaseConnectionTest",
+            "test_name": "PasswordResetEmailTest",
             "status": "FAIL",
-            "error": "Connection timeout after 30 seconds",
+            "error": "SMTP connection timed out after 30 seconds; Password reset email was not delivered",
             "ai_analysis": {
-                "explanation": "The test could not establish a database connection within the allowed 30\u2011second period.",
+                "explanation": "The test failed because the SMTP client could not establish a connection within 30 seconds, so the password reset email was not sent.",
                 "possible_causes": [
-                    "Network between the test machine and the database is unavailable or heavily congested.",
-                    "The database server is down, overloaded, or not accepting connections."
+                    "Network connectivity problems between the test environment and the SMTP server",
+                    "The SMTP server is unreachable or overloaded, causing connection attempts to time out"
                 ],
                 "troubleshooting_steps": [
-                    "Verify network connectivity from the test environment to the database host (e.g., ping, traceroute).",
-                    "Confirm that the database service is running and listening on the expected port.",
-                    "Check the database server logs and resource usage to see if it is experiencing high load or timeouts."
+                    "Verify that the test environment can resolve and ping the SMTP server hostname and that ports (e.g., 25, 587, 465) are open and not blocked by a firewall",
+                    "Check the SMTP server logs and monitoring tools to confirm that it is accepting connections from the test environment and is not experiencing high latency or resource exhaustion",
+                    "Review the test\u2019s SMTP client configuration\u2014ensure the correct hostname, port, authentication credentials, and that the timeout setting aligns with the server\u2019s expected response time"
                 ]
             }
         },
         {
-            "test_name": "PaymentProcessingTest",
+            "test_name": "DatabaseConnectionPoolTest",
             "status": "FAIL",
-            "error": "HTTP 500 Internal Server Error",
+            "error": "Database connection pool exhausted; Connection acquisition exceeded 10000 ms",
             "ai_analysis": {
-                "explanation": "The test received an HTTP 500 Internal Server Error, indicating the server encountered an unexpected condition that prevented it from fulfilling the request.",
+                "explanation": "The test failed because the database connection pool could not provide a connection within the 10,000\u202fms timeout, indicating that all pool connections were in use or could not be obtained.",
                 "possible_causes": [
-                    "Unhandled exception or bug in server-side code handling the payment request",
-                    "Misconfiguration of the server environment (e.g., database connection, missing dependencies)"
+                    "The pool's maximum size is too low for the current load, leading to exhaustion.",
+                    "Connections are not being released back to the pool (e.g., due to leaks or long\u2011running queries)."
                 ],
                 "troubleshooting_steps": [
-                    "Examine the server application logs around the time of the failure to identify exception messages or stack traces.",
-                    "Verify recent code deployments or configuration changes that could affect the payment processing endpoint.",
-                    "Reproduce the request in a controlled staging environment while enabling detailed logging or debugging to isolate the issue."
+                    "Review and increase the pool's maximum size or adjust the timeout setting.",
+                    "Add instrumentation or log statements to confirm that every acquired connection is closed in a finally block.",
+                    "Use a profiler or monitoring tool to detect long\u2011running queries or connection leaks in the application."
+                ]
+            }
+        },
+        {
+            "test_name": "PaymentGatewayTimeoutTest",
+            "status": "FAIL",
+            "error": "Payment gateway returned HTTP 504 Gateway Timeout; Payment request exceeded configured timeout",
+            "ai_analysis": {
+                "explanation": "The payment gateway did not respond within the allotted time, resulting in a 504 error.",
+                "possible_causes": [
+                    "The payment gateway's server is overloaded or experiencing high latency.",
+                    "Network issues between the application server and the payment gateway causing delayed responses."
+                ],
+                "troubleshooting_steps": [
+                    "Check the current latency and error rates of the payment gateway using monitoring dashboards.",
+                    "Verify network connectivity and ping/trace to the gateway endpoint from the application server.",
+                    "Review and, if necessary, increase the timeout configuration in the payment client while ensuring it aligns with gateway SLA."
+                ]
+            }
+        },
+        {
+            "test_name": "UpdateUserProfileAPITest",
+            "status": "FAIL",
+            "error": "API returned HTTP 500 Internal Server Error; Unexpected exception during profile update",
+            "ai_analysis": {
+                "explanation": "The API returned a 500 error during a profile update, indicating an unhandled server-side exception.",
+                "possible_causes": [
+                    "Database constraint violation or integrity error during update",
+                    "Application code bug causing a null reference or unhandled exception"
+                ],
+                "troubleshooting_steps": [
+                    "Review server logs or error monitoring to capture the stack trace or error message",
+                    "Reproduce the update locally or in a staging environment with the same input to isolate the failure",
+                    "Verify database schema constraints, connectivity, and transaction handling to rule out integrity or connectivity issues"
+                ]
+            }
+        },
+        {
+            "test_name": "ApplyDiscountCodeTest",
+            "status": "FAIL",
+            "error": "Expected discount 20 percent but received 10 percent",
+            "ai_analysis": {
+                "explanation": "The system applied a 10% discount instead of the expected 20% for the applied discount code.",
+                "possible_causes": [
+                    "The discount code was incorrectly mapped to a 10% discount in the configuration or database.",
+                    "The discount calculation logic applied an incorrect multiplier or ignored the 20% value due to a code path error."
+                ],
+                "troubleshooting_steps": [
+                    "Verify the discount code's mapping in the configuration or database to ensure it is set to 20%.",
+                    "Review the discount calculation routine for any conditional logic that could override the expected 20% value.",
+                    "Re-run the test with logging enabled to capture the applied discount value and compare it to the expected value for debugging."
+                ]
+            }
+        },
+        {
+            "test_name": "SearchPaginationTest",
+            "status": "FAIL",
+            "error": "Expected 20 search results but received 15",
+            "ai_analysis": {
+                "explanation": "The test expected 20 results per page but only 15 were returned.",
+                "possible_causes": [
+                    "Pagination logic returns fewer items than requested due to incorrect page size calculation or cutoff logic.",
+                    "Data source contains fewer than the expected 20 matching records for the test query."
+                ],
+                "troubleshooting_steps": [
+                    "Verify that the API endpoint uses the correct page size parameter and that the pagination logic includes all items up to the limit.",
+                    "Confirm the test dataset includes at least 20 records matching the query; adjust test data or expected count accordingly.",
+                    "Run the pagination endpoint manually or via a tool to inspect the raw response headers and body for page size and result count."
+                ]
+            }
+        },
+        {
+            "test_name": "UserRolePermissionsTest",
+            "status": "FAIL",
+            "error": "Expected HTTP 403 Forbidden but received HTTP 200 OK",
+            "ai_analysis": {
+                "explanation": "The test expected the server to reject the request with a 403 Forbidden status, but the server responded with a 200 OK, indicating the request was allowed.",
+                "possible_causes": [
+                    "The role-based permission rule for the requested resource is not correctly enforced or has been overridden by a more permissive rule.",
+                    "The authentication or token passed with the request is being recognized as an authorized user, bypassing the intended permission check."
+                ],
+                "troubleshooting_steps": [
+                    "Verify that the request includes the correct authentication token or session and that the token\u2019s associated role matches the one intended for the test case.",
+                    "Check the server\u2019s configuration or code that applies role permissions for the endpoint to ensure the rule is active and not overridden by a generic allow-all rule.",
+                    "Inspect the backend logs for the request to confirm which authorization rule was applied and whether any errors or fallbacks occurred during processing."
                 ]
             }
         }

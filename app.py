@@ -2,11 +2,12 @@ import hashlib
 import json
 from pathlib import Path
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
 from ai_analyzer import analyze_failure
-from log_parser import parse_log_lines
+from log_parser import read_log_file, parse_log_lines
 from data_analyzer import (
     create_dataframe,
     analyze_tests,
@@ -118,17 +119,81 @@ if log_content is not None:
                 f"{uploaded_summary['pass_rate']}%"
             )
 
-        st.subheader("❌ Uploaded Log Failures")
+        
+        
+        
 
-        if not uploaded_failures:
-            st.success("No failed tests found!")
-        else:
-            for failure in uploaded_failures:
-                with st.expander(f"❌ {failure['test_name']}"):
-                    st.write(
-                        f"**Error:** "
-                        f"{failure['error'] or 'No error details available'}"
-                    )
+
+        # Show the distribution of all supported log statuses.
+        st.subheader("📋 Log Status Distribution")
+
+        status_order = ["INFO", "PASS", "FAIL", "ERROR"]
+
+        status_counts = (
+            df["status"]
+            .value_counts()
+            .reindex(status_order, fill_value=0)
+        )
+
+        status_df = pd.DataFrame({
+            "Status": status_order,
+            "Count": status_counts.values
+        })
+
+        status_base = alt.Chart(status_df).encode(
+            x=alt.X(
+                "Status:N",
+                sort=status_order,
+                title=None,
+                axis=alt.Axis(labelAngle=0)
+            ),
+            y=alt.Y(
+                "Count:Q",
+                title="Number of Log Entries",
+                scale=alt.Scale(domainMin=0)
+            ),
+            color=alt.Color(
+                "Status:N",
+                scale=alt.Scale(
+                    domain=status_order,
+                    range=[
+                        "#3B82F6",  # INFO - blue
+                        "#16A34A",  # PASS - green
+                        "#DC2626",  # FAIL - red
+                        "#F59E0B"   # ERROR - amber
+                    ]
+                ),
+                legend=None
+            ),
+            tooltip=[
+                alt.Tooltip("Status:N", title="Log Status"),
+                alt.Tooltip("Count:Q", title="Entries")
+            ]
+        )
+
+        status_bars = status_base.mark_bar(
+            cornerRadiusTopLeft=6,
+            cornerRadiusTopRight=6,
+            size=65
+        )
+
+        status_labels = status_base.mark_text(
+            dy=-12,
+            fontSize=14,
+            fontWeight="bold"
+        ).encode(
+            text="Count:Q"
+        )
+
+        status_chart = (
+            status_bars + status_labels
+        ).properties(height=300)
+
+        st.altair_chart(
+            status_chart,
+            use_container_width=True
+        )
+
 
         # Optional AI analysis for uploaded failures.
         if uploaded_failures:
@@ -281,27 +346,80 @@ with st.expander("📋 View Saved Sample Report", expanded=False):
         st.metric("Pass Rate", f"{summary['pass_rate']}%")
 
 
-    # Display a chart of passed and failed tests.
-    st.subheader("📈 Test Results Overview")
 
-    # Prepare the chart data.
-    chart_data = {
-        "Test Status": ["Passed", "Failed"],
-        "Number of Tests": [
-            summary["passed"],
-            summary["failed"]
-        ]
-    }
+    # Display all four log statuses from the sample log.
+    st.subheader("📋 Log Status Distribution")
 
-    # Convert the dictionary into a Pandas DataFrame.
-    chart_df = pd.DataFrame(chart_data)
+    sample_path = Path(__file__).parent / "logs" / "sample.log"
 
-    # Display the bar chart.
-    st.bar_chart(
-        chart_df,
-        x="Test Status",
-        y="Number of Tests"
+    sample_lines = read_log_file(sample_path)
+    sample_logs = parse_log_lines(sample_lines)
+    sample_df = create_dataframe(sample_logs)
+
+    status_order = ["INFO", "PASS", "FAIL", "ERROR"]
+
+    status_counts = (
+        sample_df["status"]
+        .value_counts()
+        .reindex(status_order, fill_value=0)
     )
+
+    status_df = pd.DataFrame({
+        "Status": status_order,
+        "Count": status_counts.values
+    })
+
+    status_base = alt.Chart(status_df).encode(
+        x=alt.X(
+            "Status:N",
+            sort=status_order,
+            title=None,
+            axis=alt.Axis(labelAngle=0)
+        ),
+        y=alt.Y(
+            "Count:Q",
+            title="Number of Log Entries",
+            scale=alt.Scale(domainMin=0)
+        ),
+        color=alt.Color(
+            "Status:N",
+            scale=alt.Scale(
+                domain=status_order,
+                range=[
+                    "#3B82F6",
+                    "#16A34A",
+                    "#DC2626",
+                    "#F59E0B"
+                ]
+            ),
+            legend=None
+        ),
+        tooltip=[
+            alt.Tooltip("Status:N", title="Log Status"),
+            alt.Tooltip("Count:Q", title="Entries")
+        ]
+    )
+
+    status_bars = status_base.mark_bar(
+        cornerRadiusTopLeft=6,
+        cornerRadiusTopRight=6,
+        size=65
+    )
+
+    status_labels = status_base.mark_text(
+        dy=-12,
+        fontSize=14,
+        fontWeight="bold"
+    ).encode(
+        text="Count:Q"
+    )
+
+    status_chart = (
+        status_bars + status_labels
+    ).properties(height=300)
+
+    st.altair_chart(status_chart, use_container_width=True)
+
 
 
     # Display failed test details.
