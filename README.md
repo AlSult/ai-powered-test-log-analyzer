@@ -4,6 +4,20 @@ A Python-based application that analyzes automated software test logs, identifie
 
 Built with **Python, Pandas, Streamlit, and GroqCloud**, this project demonstrates automated log analysis, AI integration, interactive dashboard development, and software testing.
 
+### Test Log Dashboard
+
+View test execution statistics, pass rates, and the distribution
+of INFO, PASS, FAIL, and ERROR log entries.
+
+![Test Log Dashboard](assets/dashboard.PNG)
+
+### AI-Powered Failure Analysis
+
+Explore detected failures and AI-generated troubleshooting
+recommendations.
+
+![AI-Powered Failure Analysis](assets/failedtestdetails.PNG)
+
 ## Features
 
 - **Upload Test Logs:** Analyze `.log` and `.txt` files through the Streamlit dashboard.
