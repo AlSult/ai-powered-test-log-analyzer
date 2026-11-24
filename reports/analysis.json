@@ -10,12 +10,36 @@
         {
             "test_name": "DatabaseConnectionTest",
             "status": "FAIL",
-            "error": "Connection timeout after 30 seconds"
+            "error": "Connection timeout after 30 seconds",
+            "ai_analysis": {
+                "explanation": "The test could not establish a database connection within the allowed 30\u2011second period.",
+                "possible_causes": [
+                    "Network between the test machine and the database is unavailable or heavily congested.",
+                    "The database server is down, overloaded, or not accepting connections."
+                ],
+                "troubleshooting_steps": [
+                    "Verify network connectivity from the test environment to the database host (e.g., ping, traceroute).",
+                    "Confirm that the database service is running and listening on the expected port.",
+                    "Check the database server logs and resource usage to see if it is experiencing high load or timeouts."
+                ]
+            }
         },
         {
             "test_name": "PaymentProcessingTest",
             "status": "FAIL",
-            "error": "HTTP 500 Internal Server Error"
+            "error": "HTTP 500 Internal Server Error",
+            "ai_analysis": {
+                "explanation": "The test received an HTTP 500 Internal Server Error, indicating the server encountered an unexpected condition that prevented it from fulfilling the request.",
+                "possible_causes": [
+                    "Unhandled exception or bug in server-side code handling the payment request",
+                    "Misconfiguration of the server environment (e.g., database connection, missing dependencies)"
+                ],
+                "troubleshooting_steps": [
+                    "Examine the server application logs around the time of the failure to identify exception messages or stack traces.",
+                    "Verify recent code deployments or configuration changes that could affect the payment processing endpoint.",
+                    "Reproduce the request in a controlled staging environment while enabling detailed logging or debugging to isolate the issue."
+                ]
+            }
         }
     ]
 }

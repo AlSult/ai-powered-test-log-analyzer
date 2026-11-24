@@ -26,107 +26,6 @@ st.write(
     "and generate AI-powered troubleshooting recommendations."
 )
 
-
-# Find the JSON report.
-report_path = Path(__file__).parent / "reports" / "analysis.json"
-
-# Check that the report exists.
-if not report_path.exists():
-    st.error("Report not found. Run python report_generator.py first.")
-    st.stop()
-
-# Read the JSON report.
-with report_path.open("r", encoding="utf-8") as file:
-    report = json.load(file)
-
-# Extract the summary.
-summary = report["summary"]
-
-
-st.subheader("📊 Test Execution Summary")
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.metric("Total Tests", summary["total_tests"])
-
-with col2:
-    st.metric("Passed", summary["passed"])
-
-with col3:
-    st.metric("Failed", summary["failed"])
-
-with col4:
-    st.metric("Pass Rate", f"{summary['pass_rate']}%")
-
-
-# Display a chart of passed and failed tests.
-st.subheader("📈 Test Results Overview")
-
-# Prepare the chart data.
-chart_data = {
-    "Test Status": ["Passed", "Failed"],
-    "Number of Tests": [
-        summary["passed"],
-        summary["failed"]
-    ]
-}
-
-# Convert the dictionary into a Pandas DataFrame.
-chart_df = pd.DataFrame(chart_data)
-
-# Display the bar chart.
-st.bar_chart(
-    chart_df,
-    x="Test Status",
-    y="Number of Tests"
-)
-
-
-# Display failed test details.
-st.subheader("❌ Failed Test Details")
-
-failures = report["failures"]
-
-if not failures:
-    st.success("No failed tests found!")
-else:
-    for failure in failures:
-        test_name = failure["test_name"]
-        error_message = failure.get("error") or "No error details available"
-
-        with st.expander(f"❌ {test_name}"):
-            st.write(f"**Status:** {failure['status']}")
-            st.write(f"**Error:** {error_message}")
-
-            st.divider()
-            st.markdown("### 🤖 AI Analysis")
-
-            ai_analysis = failure.get("ai_analysis")
-
-            if ai_analysis:
-                st.markdown("**Explanation**")
-                st.write(ai_analysis["explanation"])
-
-                st.markdown("**Possible Root Causes**")
-                for cause in ai_analysis["possible_causes"]:
-                    st.write(f"- {cause}")
-
-                st.markdown("**Troubleshooting Steps**")
-                for step_number, step in enumerate(
-                    ai_analysis["troubleshooting_steps"],
-                    start=1
-                ):
-                    st.write(f"{step_number}. {step}")
-
-            else:
-                st.warning(
-                    "AI analysis is not available for this test."
-                )
-
-
-
-
 # Allow users to upload or paste test logs.
 st.subheader("📂 Analyze Your Test Logs")
 
@@ -289,4 +188,159 @@ if log_content is not None:
                         start=1
                     ):
                         st.write(f"{number}. {step}")
+        
+        # Build a report that includes AI analysis when available.
+        ai_results = st.session_state.get("uploaded_ai_results", [])
 
+        report_failures = []
+
+        for failure in uploaded_failures:
+            failure_data = failure.copy()
+
+            matching_ai_result = next(
+                (
+                    result
+                    for result in ai_results
+                    if result["test_name"] == failure["test_name"]
+                ),
+                None
+            )
+
+            failure_data["ai_analysis"] = (
+                matching_ai_result["analysis"]
+                if matching_ai_result is not None
+                else None
+            )
+
+            report_failures.append(failure_data)
+
+        downloadable_report = {
+            "source_file": source_name,
+            "summary": uploaded_summary,
+            "failures": report_failures
+        }
+
+        report_json = json.dumps(
+            downloadable_report,
+            indent=4
+        )
+
+        st.divider()
+
+        st.download_button(
+            label="⬇️ Download JSON Report",
+            data=report_json,
+            file_name="analysis_report.json",
+            mime="application/json"
+        )
+
+else:
+    st.info(
+        "Upload a log file or paste log lines above "
+        "to see your analysis results."
+    )
+
+
+st.divider()
+
+with st.expander("📋 View Saved Sample Report", expanded=False):
+    st.caption(
+        "Example analysis generated from the project's sample log file."
+    )
+
+    # Find the JSON report.
+    report_path = Path(__file__).parent / "reports" / "analysis.json"
+
+    # Check that the report exists.
+    if not report_path.exists():
+        st.error("Report not found. Run python report_generator.py first.")
+        st.stop()
+
+    # Read the JSON report.
+    with report_path.open("r", encoding="utf-8") as file:
+        report = json.load(file)
+
+    # Extract the summary.
+    summary = report["summary"]
+
+
+    st.subheader("📊 Test Execution Summary")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Total Tests", summary["total_tests"])
+
+    with col2:
+        st.metric("Passed", summary["passed"])
+
+    with col3:
+        st.metric("Failed", summary["failed"])
+
+    with col4:
+        st.metric("Pass Rate", f"{summary['pass_rate']}%")
+
+
+    # Display a chart of passed and failed tests.
+    st.subheader("📈 Test Results Overview")
+
+    # Prepare the chart data.
+    chart_data = {
+        "Test Status": ["Passed", "Failed"],
+        "Number of Tests": [
+            summary["passed"],
+            summary["failed"]
+        ]
+    }
+
+    # Convert the dictionary into a Pandas DataFrame.
+    chart_df = pd.DataFrame(chart_data)
+
+    # Display the bar chart.
+    st.bar_chart(
+        chart_df,
+        x="Test Status",
+        y="Number of Tests"
+    )
+
+
+    # Display failed test details.
+    st.subheader("❌ Failed Test Details")
+
+    failures = report["failures"]
+
+    if not failures:
+        st.success("No failed tests found!")
+    else:
+        for failure in failures:
+            test_name = failure["test_name"]
+            error_message = failure.get("error") or "No error details available"
+
+            with st.expander(f"❌ {test_name}"):
+                st.write(f"**Status:** {failure['status']}")
+                st.write(f"**Error:** {error_message}")
+
+                st.divider()
+                st.markdown("### 🤖 AI Analysis")
+
+                ai_analysis = failure.get("ai_analysis")
+
+                if ai_analysis:
+                    st.markdown("**Explanation**")
+                    st.write(ai_analysis["explanation"])
+
+                    st.markdown("**Possible Root Causes**")
+                    for cause in ai_analysis["possible_causes"]:
+                        st.write(f"- {cause}")
+
+                    st.markdown("**Troubleshooting Steps**")
+                    for step_number, step in enumerate(
+                        ai_analysis["troubleshooting_steps"],
+                        start=1
+                    ):
+                        st.write(f"{step_number}. {step}")
+
+                else:
+                    st.warning(
+                        "AI analysis is not available for this test."
+                    )
