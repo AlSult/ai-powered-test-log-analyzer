@@ -1,4 +1,5 @@
 # 🧪 AI-Powered Test Log Analyzer
+App Link: https://ai-powered-test-log-analyzer.streamlit.app/
 
 A Python-based application that analyzes automated software test logs, identifies failures, calculates test execution statistics, and uses AI to generate troubleshooting recommendations.
 
