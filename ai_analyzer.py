@@ -1,6 +1,8 @@
 import os
 import json
 
+from log_sanitizer import sanitize_log
+
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -61,9 +63,16 @@ def analyze_failure(failure):
 
     client = Groq(api_key=api_key)
 
+    # Sanitize failure details before sending them to Groq.
+    safe_failure = {
+        key: sanitize_log(value) if isinstance(value, str) else value
+        for key, value in failure.items()
+    }
+
+    # IMPORTANT: Use safe_failure, not the original failure.
     prompt = (
         "Analyze the following automated software test failure:\n"
-        f"{json.dumps(failure, indent=2)}\n\n"
+        f"{json.dumps(safe_failure, indent=2)}\n\n"
         "Return a JSON object containing exactly these fields:\n"
         "explanation: a short explanation of the error.\n"
         "possible_causes: a list of two possible root causes.\n"

@@ -153,3 +153,54 @@ def test_analyze_failure_invalid_json():
             # json.loads() should reject malformed JSON.
             with pytest.raises(json.JSONDecodeError):
                 analyze_failure(failure)
+
+
+from unittest.mock import MagicMock, patch
+
+
+def test_ai_request_redacts_credentials():
+    from ai_analyzer import analyze_failure
+
+    failure = {
+        "test_name": "AuthenticationTest",
+        "status": "FAIL",
+        "error": "Login failed token=abc123secret",
+    }
+
+    mock_response = MagicMock()
+    mock_response.choices[0].message.content = """
+    {
+        "explanation": "Authentication failed.",
+        "possible_causes": [
+            "Invalid credentials",
+            "Expired session"
+        ],
+        "troubleshooting_steps": [
+            "Check credentials",
+            "Review authentication logs",
+            "Retry login"
+        ]
+    }
+    """
+
+    with patch("ai_analyzer.Groq") as mock_groq:
+        mock_client = mock_groq.return_value
+        mock_client.chat.completions.create.return_value = mock_response
+
+        with patch.dict(
+            "os.environ",
+            {"GROQ_API_KEY": "fake-test-key"}
+        ):
+            analyze_failure(failure)
+
+        # Inspect the actual arguments sent to Groq.
+        request = mock_client.chat.completions.create.call_args
+        messages = request.kwargs["messages"]
+
+        prompt_text = " ".join(
+            str(message.get("content", ""))
+            for message in messages
+        )
+
+        assert "abc123secret" not in prompt_text
+        assert "token=[REDACTED]" in prompt_text

@@ -198,7 +198,11 @@ ai-powered-test-log-analyzer/
 
 ## Security and Privacy
 
-Only use sample or sanitized logs for AI troubleshooting. When AI analysis is requested, test names and error messages are sent to GroqCloud. Avoid submitting passwords, access tokens, personal data, or confidential production logs.
+This application includes automatic redaction of common sensitive information, such as passwords, API keys, access tokens, and email addresses, before submitting failure details to GroqCloud for AI analysis.
+
+Important: Pattern-based redaction is not guaranteed to detect every secret or personal identifier. Users should avoid uploading confidential production logs, real credentials, or other highly sensitive data.
+
+AI analysis is optional. Log parsing, statistics, and visualization can be used without requesting AI processing.
 
 ## License
 

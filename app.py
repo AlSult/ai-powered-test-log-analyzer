@@ -22,6 +22,21 @@ st.set_page_config(
 
 st.title("🧪 AI-Powered Test Log Analyzer")
 
+st.warning(
+    "🔐 **Security & Privacy Notice**\n\n"
+    "This application includes automatic redaction of common "
+    "sensitive information, including passwords, API keys, "
+    "access tokens, and email addresses, before sending "
+    "failure details to the AI service.\n\n"
+    "⚠️ **Please use caution:** Automated redaction cannot "
+    "guarantee detection of every secret or personal detail. "
+    "Do not upload confidential production logs, real "
+    "credentials, or highly sensitive information.\n\n"
+    "🤖 **AI Processing:** When you request AI analysis, "
+    "sanitized failure details are sent to GroqCloud, "
+    "a third-party AI service."
+)
+
 st.write(
     "Analyze automated test logs, identify failures, "
     "and generate AI-powered troubleshooting recommendations."
@@ -204,11 +219,24 @@ if log_content is not None:
                 "Test names and error messages will be sent to GroqCloud."
             )
 
-            if st.button("✨ Analyze Failures with AI"):
+            st.caption(
+                "AI analysis is limited to the first 3 failed tests "
+                "per request to control API usage."
+            )
+
+            
+            if st.button(
+                "✨ Analyze Failures with AI",
+                disabled="uploaded_ai_results" in st.session_state
+            ):
+
                 with st.spinner("Analyzing failed tests..."):
                     ai_results = []
+                    
+                    MAX_AI_FAILURES = 3
+                    failures_to_analyze = uploaded_failures[:MAX_AI_FAILURES]
 
-                    for failure in uploaded_failures:
+                    for failure in failures_to_analyze:
                         try:
                             analysis = analyze_failure(failure)
 
